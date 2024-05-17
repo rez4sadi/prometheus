@@ -1,0 +1,471 @@
+groups:
+ - name: Basic resource monitoring
+   rules:
+   - alert: HostOutOfMemory
+     expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+     for: 2m
+     labels:
+        severity: warning
+     annotations:
+        summary: "Host out of memory (instance {{ $labels.instance }})"
+        description: "Node memory is filling up (< 10% left)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostMemoryUnderMemoryPressure
+     expr: rate(node_vmstat_pgmajfault[1m]) > 1000
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host memory under memory pressure (instance {{ $labels.instance }})"
+       description: "The node is under heavy memory pressure. High rate of major page faults\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+   - alert: PrometheusTargetMissing
+     expr: up == 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Prometheus target missing (instance {{ $labels.instance }})"
+       description: "A Prometheus target has disappeared. An exporter might be crashed.\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostUnusualNetworkThroughputIn
+     expr: sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100
+     for: 5m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host unusual network throughput in (instance {{ $labels.instance }})"
+       description: "Host network interfaces are probably receiving too much data (> 100 MB/s)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostUnusualNetworkThroughputOut
+     expr: sum by (instance) (rate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100
+     for: 5m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host unusual network throughput out (instance {{ $labels.instance }})"
+       description: "Host network interfaces are probably sending too much data (> 100 MB/s)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostUnusualDiskReadRate
+     expr: sum by (instance) (rate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50
+     for: 5m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host unusual disk read rate (instance {{ $labels.instance }})"
+       description: "Disk is probably reading too much data (> 50 MB/s)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostUnusualDiskWriteRate
+     expr: sum by (instance) (rate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host unusual disk write rate (instance {{ $labels.instance }})"
+       description: "Disk is probably writing too much data (> 50 MB/s)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: RedisDown
+     expr: redis_up == 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Redis down (instance {{ $labels.instance }})"
+       description: "Redis instance is down\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: NginxHighHttp4xxErrorRate
+     expr: sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5
+     for: 1m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Nginx high HTTP 4xx error rate (instance {{ $labels.instance }})"
+       description: "Too many HTTP requests with status 4xx (> 5%)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: NGINX-API-DOWN
+     expr: nginx_connections_active == 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "API is Down  (instance {{ $labels.instance }})"
+       description: "Active Conncetion Is 0 \n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: NGINX-Total-Req-0
+     expr: nginx_http_requests_total == 0
+     for: 1m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Total Request  is 0  (instance {{ $labels.instance }})"
+       description: "Total Req is  0 \n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlDown
+     expr: pg_up == 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql down (instance {{ $labels.instance }})"
+       description: "Postgresql instance is down\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlRestarted
+     expr: time() - pg_postmaster_start_time_seconds < 60
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql restarted (instance {{ $labels.instance }})"
+       description: "Postgresql restarted\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+   - alert: HostRaidDiskFailure
+     expr: node_md_disks{state="failed"} > 0
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host RAID disk failure (instance {{ $labels.instance }})"
+       description: "At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostSystemdServiceCrashed
+     expr: node_systemd_unit_state{state="failed"} == 1
+     for: 0m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host SystemD service crashed (instance {{ $labels.instance }})"
+       description: "SystemD service crashed\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: ContainerCpuUsage
+     expr: (sum(rate(container_cpu_usage_seconds_total[3m])) BY (instance, name) * 100) > 80
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Container CPU usage (instance {{ $labels.instance }})"
+       description: "Container CPU usage is above 80%\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+ 
+   - alert: ContainerVolumeIoUsage
+     expr: (sum(container_fs_io_current) BY (instance, name) * 100) > 80
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Container Volume IO usage (instance {{ $labels.instance }})"
+       description: "Container Volume IO usage is above 80%\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostSwapIsFillingUp
+     expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host swap is filling up (instance {{ $labels.instance }})"
+       description: "Swap is filling up (>80%)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+
+   - alert: HostHighCpuLoad
+     expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+     for: 0m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host high CPU load (instance {{ $labels.instance }})"
+       description: "CPU load is > 80%\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlDown
+     expr: pg_up == 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql down (instance {{ $labels.instance }})"
+       description: "Postgresql instance is down\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+ 
+   - alert: PostgresqlRestarted
+     expr: time() - pg_postmaster_start_time_seconds < 60
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql restarted (instance {{ $labels.instance }})"
+       description: "Postgresql restarted\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlExporterError
+     expr: pg_exporter_last_scrape_error > 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql exporter error (instance {{ $labels.instance }})"
+       description: "Postgresql exporter is showing errors. A query may be buggy in query.yaml\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlTableNotVaccumed
+     expr: time() - pg_stat_user_tables_last_autovacuum > 60 * 60 * 24
+     for: 0m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Postgresql table not vaccumed (instance {{ $labels.instance }})"
+       description: "Table has not been vaccum for 24 hours\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlTooManyConnections
+     expr: sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) > pg_settings_max_connections * 0.8
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Postgresql too many connections (instance {{ $labels.instance }})"
+       description: "PostgreSQL instance has too many connections (> 80%).\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlNotEnoughConnections
+     expr: sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) < 5
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Postgresql not enough connections (instance {{ $labels.instance }})"
+       description: "PostgreSQL instance should have more connections (> 5)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlSlowQueries
+     expr: pg_slow_queries > 0
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Postgresql slow queries (instance {{ $labels.instance }})"
+       description: "PostgreSQL executes slow queries\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlHighRollbackRate
+     expr: rate(pg_stat_database_xact_rollback{datname!~"template.*"}[3m]) / rate(pg_stat_database_xact_commit{datname!~"template.*"}[3m]) > 0.02
+     for: 0m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Postgresql high rollback rate (instance {{ $labels.instance }})"
+       description: "Ratio of transactions being aborted compared to committed is > 2 %\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlCommitRateLow
+     expr: rate(pg_stat_database_xact_commit[1m]) < 10
+     for: 2m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql commit rate low (instance {{ $labels.instance }})"
+       description: "Postgres seems to be processing very few transactions\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlHighRateStatementTimeout
+     expr: rate(postgresql_errors_total{type="statement_timeout"}[1m]) > 3
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql high rate statement timeout (instance {{ $labels.instance }})"
+       description: "Postgres transactions showing high rate of statement timeouts\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlHighRateStatementTimeout
+     expr: rate(postgresql_errors_total{type="statement_timeout"}[1m]) > 3
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql high rate statement timeout (instance {{ $labels.instance }})"
+       description: "Postgres transactions showing high rate of statement timeouts\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlUnusedReplicationSlot
+     expr: pg_replication_slots_active == 0
+     for: 1m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Postgresql unused replication slot (instance {{ $labels.instance }})"
+       description: "Unused Replication Slots\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlTooManyDeadTuples
+     expr: ((pg_stat_user_tables_n_dead_tup > 10000) / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) >= 0.1 unless ON(instance) (pg_replication_is_replica == 1)
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Postgresql too many dead tuples (instance {{ $labels.instance }})"
+       description: "PostgreSQL dead tuples is too large\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlSplitBrain
+     expr: count(pg_replication_is_replica == 0) != 1
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql split brain (instance {{ $labels.instance }})"
+       description: "Split Brain, too many primary Postgresql databases in read-write mode\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlPromotedNode
+     expr: pg_replication_is_replica and changes(pg_replication_is_replica[1m]) > 0
+     for: 0m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Postgresql promoted node (instance {{ $labels.instance }})"
+       description: "Postgresql standby server has been promoted as primary node\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+
+   - alert: PostgresqlSslCompressionActive
+     expr: sum(pg_stat_ssl_compression) > 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql SSL compression active (instance {{ $labels.instance }})"
+       description: "Database connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PostgresqlTooManyLocksAcquired 
+     expr: ((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20
+     for: 2m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Postgresql too many locks acquired (instance {{ $labels.instance }})"
+       description: "Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostDiskWillFillIn24Hours
+     expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host disk will fill in 24 hours (instance {{ $labels.instance }})"
+       description: "Filesystem is predicted to run out of space within the next 24 hours at current write rate\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostOutOfInodes
+     expr: node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint="/rootfs"} * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly{mountpoint="/rootfs"} == 0
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host out of inodes (instance {{ $labels.instance }})"
+       description: "Disk is almost running out of available inodes (< 10% left)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostInodesWillFillIn24Hours
+     expr: node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint="/rootfs"} * 100 < 10 and predict_linear(node_filesystem_files_free{mountpoint="/rootfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly{mountpoint="/rootfs"} == 0
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host inodes will fill in 24 hours (instance {{ $labels.instance }})i"
+       description: "Filesystem is predicted to run out of inodes within the next 24 hours at current write rate\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostUnusualDiskReadLatency
+     expr: rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host unusual disk read latency (instance {{ $labels.instance }})"
+       description: "Disk latency is growing (read operations > 100ms)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: HostUnusualDiskWriteLatency
+     expr: rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Host unusual disk write latency (instance {{ $labels.instance }})"
+       description: "Disk latency is growing (write operations > 100ms)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: RedisTooManyMasters
+     expr: count(redis_instance_info{role="master"}) > 1
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Redis too many masters (instance {{ $labels.instance }})"
+       description: "Redis cluster has too many nodes marked as master.\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: RedisDisconnectedSlaves
+     expr: count without (instance, job) (redis_connected_slaves) - sum without (instance, job) (redis_connected_slaves) - 1 > 1
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Redis disconnected slaves (instance {{ $labels.instance }})"
+       description: "Redis not replicating for all slaves. Consider reviewing the redis replication status.\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: RedisReplicationBroken
+     expr: delta(redis_connected_slaves[1m]) < 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Redis replication broken (instance {{ $labels.instance }})"
+       description: "Redis instance lost a slave\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: RedisMissingBackup
+     expr: time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 24
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Redis missing backup (instance {{ $labels.instance }})"
+       description: "Redis has not been backuped for 24 hours\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: RedisOutOfSystemMemory
+     expr: redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 90
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Redis out of system memory (instance {{ $labels.instance }})"
+       description: "Redis is running out of system memory (> 90%)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: RedisOutOfConfiguredMaxmemory
+     expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Redis out of configured maxmemory (instance {{ $labels.instance }})"
+       description: "Redis is running out of configured maxmemory (> 90%)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: RedisRejectedConnections
+     expr: increase(redis_rejected_connections_total[1m]) > 0
+     for: 0m
+     labels:
+       severity: critical
+     annotations:
+       summary: "Redis rejected connections (instance {{ $labels.instance }})"
+       description: "Some connections to Redis has been rejected\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: PrometheusConfigurationReloadFailure
+     expr: prometheus_config_last_reload_successful != 1
+     for: 0m
+     labels:
+       severity: warning
+     annotations:
+       summary: "Prometheus configuration reload failure (instance {{ $labels.instance }})"
+       description: "Prometheus configuration reload error\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+   - alert: ping-Local
+     expr: ping{host="217.218.127.127",metric="avg"} > 400
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "ping is more than 400 (instance {{ $labels.instance }})"
+       description: "ping is more than 400  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+   - alert: ping-internte8
+     expr: ping{host="8.8.8.8",metric="avg"} > 400
+     for: 2m
+     labels:
+       severity: warning
+     annotations:
+       summary: "ping is more than 400 (instance {{ $labels.instance }})"
+       description: "ping is more than 400  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+
+   - alert: internet
+     expr: probe_duration_seconds{job="blackbox-ICMP"} == 0 or probe_duration_seconds{job="blackbox-ICMP"} > 0.5
+     for: 30s
+     labels:
+       severity: warning
+     annotations:
+       summary:  "Internet on datacenter is unstable - ICMP Request From {{$labels.instance}} "
+       description:  "Internet on datacenter is unstable - ICMP Request From {{$labels.instance}} VALUE = {{ $value }}\n "
+
